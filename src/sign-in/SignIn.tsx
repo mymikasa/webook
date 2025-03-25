@@ -17,6 +17,7 @@ import ForgotPassword from './components/ForgotPassword';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import { authAPI } from '../services/api';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -86,28 +87,12 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
     const password = data.get('password') as string;
 
     try {
-      const response = await fetch('你的登录接口地址', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('登录失败');
-      }
-
-      const result = await response.json();
+      const result = await authAPI.login(email, password);
       
-      // 登录成功后的处理
       if (result.success) {
-        // 存储token
         localStorage.setItem('token', result.token);
-        // 跳转到首页或其他页面
         window.location.href = '/';
       } else {
-        // 显示错误信息
         setEmailError(true);
         setEmailErrorMessage(result.message || '登录失败，请检查邮箱和密码');
       }
