@@ -1,10 +1,7 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
 import CssBaseline from '@mui/material/CssBaseline';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Divider from '@mui/material/Divider';
 import FormLabel from '@mui/material/FormLabel';
 import FormControl from '@mui/material/FormControl';
 import Link from '@mui/material/Link';
@@ -14,10 +11,9 @@ import Stack from '@mui/material/Stack';
 import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import ForgotPassword from './components/ForgotPassword';
 import AppTheme from '../shared-theme/AppTheme';
 import ColorModeSelect from '../shared-theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from './components/CustomIcons';
+import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../sign-in/components/CustomIcons';
 import { authAPI } from '../services/api';
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -39,7 +35,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
   }),
 }));
 
-const SignInContainer = styled(Stack)(({ theme }) => ({
+const SignUpContainer = styled(Stack)(({ theme }) => ({
   height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
   minHeight: '100%',
   padding: theme.spacing(2),
@@ -62,57 +58,50 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
   },
 }));
 
-export default function SignIn(props: { disableCustomTheme?: boolean }) {
+export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-  const [open, setOpen] = React.useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
+  const [confirmPasswordError, setConfirmPasswordError] = React.useState(false);
+  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = React.useState('');
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    if (emailError || passwordError) {
-      event.preventDefault();
+    event.preventDefault();
+    if (emailError || passwordError || confirmPasswordError) {
       return;
     }
-    event.preventDefault();
+
     const data = new FormData(event.currentTarget);
     const email = data.get('email') as string;
     const password = data.get('password') as string;
+    const confirmPassword = data.get('confirmPassword') as string;
 
     try {
-      const response = await authAPI.login(email, password);
-      console.log('Login response:', response);
+      const result = await authAPI.register(email, password, confirmPassword);
       
-      if (response.success) {
-        localStorage.setItem('token', response.token);
-        window.location.href = '/';
+      if (result.success) {
+        window.location.href = '/sign-in';
       } else {
         setEmailError(true);
-        setEmailErrorMessage(response.message || '登录失败，请检查邮箱和密码');
+        setEmailErrorMessage(result.message || '注册失败，请稍后重试');
       }
     } catch (error) {
       setEmailError(true);
-      setEmailErrorMessage('登录失败，请稍后重试');
+      setEmailErrorMessage('注册失败，请稍后重试');
     }
   };
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
     const password = document.getElementById('password') as HTMLInputElement;
+    const confirmPassword = document.getElementById('confirmPassword') as HTMLInputElement;
 
     let isValid = true;
 
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
-      setEmailErrorMessage('Please enter a valid email address.');
+      setEmailErrorMessage('请输入有效的邮箱地址');
       isValid = false;
     } else {
       setEmailError(false);
@@ -121,11 +110,20 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
 
     if (!password.value || password.value.length < 6) {
       setPasswordError(true);
-      setPasswordErrorMessage('Password must be at least 6 characters long.');
+      setPasswordErrorMessage('密码长度至少为6个字符');
       isValid = false;
     } else {
       setPasswordError(false);
       setPasswordErrorMessage('');
+    }
+
+    if (password.value !== confirmPassword.value) {
+      setConfirmPasswordError(true);
+      setConfirmPasswordErrorMessage('两次输入的密码不一致');
+      isValid = false;
+    } else {
+      setConfirmPasswordError(false);
+      setConfirmPasswordErrorMessage('');
     }
 
     return isValid;
@@ -134,7 +132,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
-      <SignInContainer direction="column" justifyContent="space-between">
+      <SignUpContainer direction="column" justifyContent="space-between">
         <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
         <Card variant="outlined">
           <SitemarkIcon />
@@ -143,7 +141,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             variant="h4"
             sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
           >
-            Sign in
+            注册
           </Typography>
           <Box
             component="form"
@@ -157,7 +155,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
             }}
           >
             <FormControl>
-              <FormLabel htmlFor="email">Email</FormLabel>
+              <FormLabel htmlFor="email">邮箱</FormLabel>
               <TextField
                 error={emailError}
                 helperText={emailErrorMessage}
@@ -174,7 +172,7 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="password">Password</FormLabel>
+              <FormLabel htmlFor="password">密码</FormLabel>
               <TextField
                 error={passwordError}
                 helperText={passwordErrorMessage}
@@ -182,72 +180,72 @@ export default function SignIn(props: { disableCustomTheme?: boolean }) {
                 placeholder="••••••"
                 type="password"
                 id="password"
-                autoComplete="current-password"
-                autoFocus
+                autoComplete="new-password"
                 required
                 fullWidth
                 variant="outlined"
                 color={passwordError ? 'error' : 'primary'}
               />
             </FormControl>
-            <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            />
-            <ForgotPassword open={open} handleClose={handleClose} />
+            <FormControl>
+              <FormLabel htmlFor="confirmPassword">确认密码</FormLabel>
+              <TextField
+                error={confirmPasswordError}
+                helperText={confirmPasswordErrorMessage}
+                name="confirmPassword"
+                placeholder="••••••"
+                type="password"
+                id="confirmPassword"
+                autoComplete="new-password"
+                required
+                fullWidth
+                variant="outlined"
+                color={confirmPasswordError ? 'error' : 'primary'}
+              />
+            </FormControl>
             <Button
               type="submit"
               fullWidth
               variant="contained"
               onClick={validateInputs}
             >
-              Sign in
+              注册
             </Button>
-            <Link
-              component="button"
-              type="button"
-              onClick={handleClickOpen}
-              variant="body2"
-              sx={{ alignSelf: 'center' }}
-            >
-              Forgot your password?
-            </Link>
           </Box>
-          <Divider>or</Divider>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Google')}
+              onClick={() => alert('使用 Google 注册')}
               startIcon={<GoogleIcon />}
             >
-              Sign in with Google
+              使用 Google 注册
             </Button>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign in with Facebook')}
+              onClick={() => alert('使用 Facebook 注册')}
               startIcon={<FacebookIcon />}
             >
-              Sign in with Facebook
+              使用 Facebook 注册
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
-              Don&apos;t have an account?{' '}
+              已有账号？{' '}
               <RouterLink
-                to="/sign-up"
+                to="/sign-in"
                 style={{ textDecoration: 'none' }}
               >
                 <Link
                   variant="body2"
                   sx={{ alignSelf: 'center' }}
                 >
-                  Sign up
+                  登录
                 </Link>
               </RouterLink>
             </Typography>
           </Box>
         </Card>
-      </SignInContainer>
+      </SignUpContainer>
     </AppTheme>
   );
-}
+} 

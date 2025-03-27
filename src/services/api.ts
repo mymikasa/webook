@@ -8,6 +8,11 @@ interface LoginResponse {
   message?: string;
 }
 
+interface RegisterResponse {
+  success: boolean;
+  message?: string;
+}
+
 // 创建 axios 实例
 const api = axios.create({
   baseURL: config.api.baseURL,
@@ -34,7 +39,10 @@ api.interceptors.request.use(
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response: any) => response.data,
+  (response) => {
+    // 返回完整响应对象，让调用方自行处理data
+    return response;
+  },
   (error) => {
     if (error.response) {
       // 处理错误响应
@@ -67,8 +75,26 @@ api.interceptors.response.use(
 // 定义 API 方法
 export const authAPI = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/user/login', { email, password });
-    console.log(response.data);
+    try {
+      const response = await api.post<LoginResponse>('/user/login', { email, password });
+      if (!response.data) {
+        throw new Error('Response data is undefined');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+  register: async (email: string, password: string, confirmPassword: string): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/user/signup', { 
+      email, 
+      password,
+      confirmPassword 
+    });
+    console.log('response');
+    console.log(response);
+    console.log(response.data.success);
     return response.data;
   },
 };
@@ -82,4 +108,4 @@ export const otherAPI = {
   // 其他模块的 API 方法
 };
 
-export default api; 
+export default api;

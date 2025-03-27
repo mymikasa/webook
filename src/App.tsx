@@ -1,8 +1,10 @@
 import React from 'react';
 // import logo from './logo.svg';
 import SignIn from './sign-in/SignIn';
+import SignUp from './sign-up/SignUp';
 import { ThemeProvider } from '@mui/material/styles';
 import './App.css';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 
 // function App() {
 //   return (
@@ -27,8 +29,13 @@ import './App.css';
 
 function App() {
   return (
-    
-      <SignIn></SignIn>
+    <Router>
+      <Routes>
+        <Route path="/sign-in" element={<SignIn />} />
+        <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/" element={<Navigate to="/sign-in" replace />} />
+      </Routes>
+    </Router>
   );
 }
 
